@@ -19,6 +19,8 @@ class Tree {
 	int rank;
 public:
 	//BUILD
+	Tree();
+
     // Create a node with given information
     Tree(int lbl, int lvl);
 
@@ -37,6 +39,8 @@ public:
 	// Link two sets
 	Tree* link(Tree* y);
 
+	//Merge two nodes
+	Tree* merge(Tree* y);
 
 	// INFOS ACCESS AND MODIFICATION
     // Return information of this node

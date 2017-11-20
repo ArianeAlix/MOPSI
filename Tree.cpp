@@ -1,6 +1,16 @@
 #include "Tree.h"
 
 
+Tree::Tree() {
+	int label;
+	int level;
+	area = 1;
+	int highest;
+	vector<Tree*> sons = {};
+};
+
+
+
 Tree::Tree(int lbl, int lvl) {
 	label = lbl;
 	level = lvl;
@@ -40,17 +50,39 @@ Tree* Tree::find() {
 Tree* Tree::link(Tree* y) {
 	if (rank > y->rank) {
 		y-> par = this;
+		this->addAsLastSon(y);
 		return this;
 	}
 	if (rank == y->rank) {
 		y->rank += 1;
 	}
 	par = y;
+	y->addAsLastSon(this);
 	return y;
 };
 
 
-
+Tree* Tree::merge(Tree* y) {
+	Tree* temp = this->link(y);
+	Tree* temp2;
+	if (temp->label == y->label) {
+		for (vector<Tree*>::iterator it = sons.begin(); it != sons.end(); ++it) {
+			y->addAsLastSon(*it);
+		}
+		temp2 = this;
+	}
+	else{
+		for (vector<Tree*>::iterator it = y->sons.begin(); it != y->sons.end(); ++it) {
+			this->addAsLastSon(*it);
+		}
+		temp2 = y;
+	}
+	temp->area = temp->area + temp2->area;
+	if (temp->highest < temp2->highest) {
+		temp->highest = temp2->highest;
+	}
+	return temp;
+}
 
 
 int Tree::getLevel() {
@@ -78,7 +110,6 @@ Tree* Tree::getSon(int pos) {
 void Tree::addAsLastSon(Tree* newSon) {
 	sons.push_back(newSon);
 };
-
 
 
 

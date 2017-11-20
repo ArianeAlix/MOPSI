@@ -31,16 +31,25 @@ int main(){
 	Tree* x= new Tree(0, 12);
 	Tree* y = new Tree(1, 14);
 	Tree* z = new Tree(2, 9);
+	Tree* w = new Tree(3, 7);
 	x->makeSet();
 	y->makeSet();
 	z->makeSet();
+	w->makeSet();
 
 	x->link(y);
-	z->link(y); 
+	z->link(w); 
 
 	x->find()->display("* "); // Affiche le parent de x, qui est y depuis l'opération link
-	y->find()->display("* "); // Doit afficher la meme chose (est son propre parent)
-	z->find()->display("* "); // Pareil que pour x
+	/*y->find()->display("* "); // Doit afficher la meme chose (est son propre parent)*/
+	cout << endl;
+
+	z->find()->display("* "); // Affiche w 
+	cout << endl;
+
+	y=y->merge(w);
+	y->display("* ");
+	cout << endl;
 
 
 	click();
