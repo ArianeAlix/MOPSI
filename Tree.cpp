@@ -50,14 +50,12 @@ Tree* Tree::find() {
 Tree* Tree::link(Tree* y) {
 	if (rank > y->rank) {
 		y-> par = this;
-		this->addAsLastSon(y);
 		return this;
 	}
 	if (rank == y->rank) {
 		y->rank += 1;
 	}
 	par = y;
-	y->addAsLastSon(this);
 	return y;
 };
 

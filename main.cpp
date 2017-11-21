@@ -34,6 +34,7 @@ int main(){
 	Tree* w = new Tree(3, 7);
 	x->makeSet();
 	y->makeSet();
+	y->addAsLastSon(new Tree(4, 10));
 	z->makeSet();
 	w->makeSet();
 
@@ -47,8 +48,9 @@ int main(){
 	z->find()->display("* "); // Affiche w 
 	cout << endl;
 
-	y=y->merge(w);
-	y->display("* ");
+	Tree* v=y->merge(w);
+	v->display("* ");
+	cout << v->area << endl; // Renvoie 2 car un merge effectué
 	cout << endl;
 
 

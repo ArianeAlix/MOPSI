@@ -7,6 +7,7 @@ using namespace std;
 
 // Node of a tree containing some data at each node
 class Tree {
+public:
     // Node information
 	int label;
     int area;
@@ -17,7 +18,7 @@ class Tree {
 	// Info on its set
 	Tree* par;
 	int rank;
-public:
+
 	//BUILD
 	Tree();
 
