@@ -33,29 +33,43 @@ Tree::~Tree() {
 
 
 
-void Tree::makeSet() {
-	par = this;
-	rank = 0;
+void Tree::makeSet1() {
+	par1 = this;
+	rank1 = 0;
 };
 
 
-Tree* Tree::find() {
-	if (par != this) {
-		par = (*par).find();
+void Tree::makeSet2() {
+	par2 = this;
+	rank2 = 0;
+};
+
+
+Tree* Tree::find1() {
+	if (par1 != this) {
+		par1 = (*par1).find1();
 	}
-	return par;
+	return par1;
+};
+
+
+Tree* Tree::find2() {
+	if (par2 != this) {
+		par2 = (*par2).find1();
+	}
+	return par2;
 };
 
 
 Tree* Tree::link(Tree* y) {
-	if (rank > y->rank) {
-		y-> par = this;
+	if (rank2 > y->rank2) {
+		y-> par2 = this;
 		return this;
 	}
-	if (rank == y->rank) {
-		y->rank += 1;
+	if (rank2 == y->rank2) {
+		y->rank2 += 1;
 	}
-	par = y;
+	par2 = y;
 	return y;
 };
 

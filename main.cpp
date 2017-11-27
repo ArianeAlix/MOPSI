@@ -3,6 +3,14 @@
 using namespace Imagine;
 
 
+Tree* buildComponentTree(byte* image, vector<Tree*> nodes,){
+
+
+
+
+}
+
+
 
 int main(){
 	Tree* root = new Tree(0,12);
@@ -32,20 +40,20 @@ int main(){
 	Tree* y = new Tree(1, 14);
 	Tree* z = new Tree(2, 9);
 	Tree* w = new Tree(3, 7);
-	x->makeSet();
-	y->makeSet();
+	x->makeSet2();
+	y->makeSet2();
 	y->addAsLastSon(new Tree(4, 10));
-	z->makeSet();
-	w->makeSet();
+	z->makeSet2();
+	w->makeSet2();
 
 	x->link(y);
 	z->link(w); 
 
-	x->find()->display("* "); // Affiche le parent de x, qui est y depuis l'opération link
+	x->find2()->display("* "); // Affiche le parent de x, qui est y depuis l'opération link
 	/*y->find()->display("* "); // Doit afficher la meme chose (est son propre parent)*/
 	cout << endl;
 
-	z->find()->display("* "); // Affiche w 
+	z->find2()->display("* "); // Affiche w 
 	cout << endl;
 
 	Tree* v=y->merge(w);
@@ -54,6 +62,27 @@ int main(){
 	cout << endl;
 
 
+	// IMPORT d'IMAGE
+	// récupérer le fichier
+	const char *image_file =
+		(argc > 1) ? argv[1] : srcPath("lenna.png");
+
+	// Load image
+	byte* image;
+	int width, height;
+	cout << "Loading image: " << image_file << endl;
+	loadGreyImage(image_file, image, width, height);
+
+	// Print statistics
+	cout << "Image size: " << width << "x" << height << endl;
+	cout << "Number of pixels: " << width*height << endl;
+
+	// Display image
+	Window window = openWindow(width, height);
+	putGreyImage(IntPoint2(0, 0), image, width, height);
+
+
 	click();
+	delete image;
 	return 0;
 }

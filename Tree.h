@@ -16,8 +16,10 @@ public:
     // Sequence of sons (empty if none)
     vector<Tree*> sons;
 	// Info on its set
-	Tree* par;
-	int rank;
+	Tree* par1;
+	Tree* par2;
+	int rank1;
+	int rank2;
 
 	//BUILD
 	Tree();
@@ -31,11 +33,13 @@ public:
 
 
 	//ITS SET
-	// Create the set of a node
-	void makeSet();
+	// Create the set of a node 
+	void makeSet1();
+	void makeSet2();// considering p as a tree
 
 	// Find the canonical node of the set
-	Tree* find();
+	Tree* find1();
+	Tree* find2();// considering p as a tree
 
 	// Link two sets
 	Tree* link(Tree* y);
