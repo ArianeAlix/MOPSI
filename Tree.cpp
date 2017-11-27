@@ -7,6 +7,7 @@ Tree::Tree() {
 	area = 1;
 	int highest;
 	vector<Tree*> sons = {};
+	bool seen = false;
 };
 
 
@@ -17,6 +18,7 @@ Tree::Tree(int lbl, int lvl) {
 	area = 1;
 	highest = lvl;
 	vector<Tree*> sons = {};
+	bool seen = false;
 };
 
 void Tree::delProf(Tree arb) {
@@ -97,13 +99,39 @@ Tree* Tree::merge(Tree* y) {
 }
 
 
+
+int Tree::getLabel() {
+	return label;
+};
+
 int Tree::getLevel() {
 	return level;
 };
 
+int Tree::getArea() {
+	return area;
+};
+
+int Tree::getHighest() {
+	return highest;
+};
+
+
 void Tree::setLevel(int lvl) {
 	level = lvl;
 };
+
+
+void Tree::setArea(int a) {
+	area=a;
+};
+
+
+void Tree::setHighest(int h) {
+	highest = h;;
+};
+
+
 
 int Tree::nbSons() {
 	return sons.size();
@@ -116,6 +144,10 @@ Tree* Tree::getSon(int pos) {
 	catch (out_of_range &exn) {
 		cerr << "Out of range :" << exn.what() << endl;
 	}
+};
+
+bool Tree::wasSeen() {
+	return seen;
 };
 
 

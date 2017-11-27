@@ -7,12 +7,13 @@ using namespace std;
 
 // Node of a tree containing some data at each node
 class Tree {
-public:
+private:
     // Node information
 	int label;
     int area;
 	int level;
 	int highest;
+	bool seen;// to know if we have already processed it
     // Sequence of sons (empty if none)
     vector<Tree*> sons;
 	// Info on its set
@@ -21,6 +22,7 @@ public:
 	int rank1;
 	int rank2;
 
+public:
 	//BUILD
 	Tree();
 
@@ -47,19 +49,27 @@ public:
 	//Merge two nodes
 	Tree* merge(Tree* y);
 
+
 	// INFOS ACCESS AND MODIFICATION
     // Return information of this node
+	int getLabel();
     int getLevel();
-
+	int getArea();
+	int getHighest();
     // Set information of this node
     void setLevel(int lvl);
-
+	void setArea(int a);
+	void setHighest(int h);
     // Return the number of sons of this node
     int nbSons();
 
     // Return the son at position pos, if any (considering left-most son is at position 0)
 	// Return an error if no son exists at the given position without exiting 
     Tree* getSon(int pos);
+
+	// Check is the node was already processed
+	bool wasSeen();
+
 
     // Add newSon as supplementary right-most son of this node
     void addAsLastSon(Tree* newSon);
