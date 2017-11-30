@@ -3,7 +3,7 @@
 #include <map>
 using namespace Imagine;
 using namespace std;
-
+//juste un test de commit de Jean!
 
 void sortLevel(vector<int> sorted[256], byte* image, int w, int h) {
 	// pixels sorting in linear time
