@@ -70,6 +70,12 @@ public:
 	// Check is the node was already processed
 	bool wasSeen();
 
+<<<<<<< HEAD
+	// Tell the node has been seen
+	void isSeen();
+
+=======
+>>>>>>> 25338465497b35ea6400f687cac3987b8dad85f7
 
     // Add newSon as supplementary right-most son of this node
     void addAsLastSon(Tree* newSon);

@@ -1,6 +1,11 @@
 #include "Tree.h"
 #include<Imagine/Graphics.h>
 #include <map>
+<<<<<<< HEAD
+#include <algorithm>
+
+=======
+>>>>>>> 25338465497b35ea6400f687cac3987b8dad85f7
 using namespace Imagine;
 using namespace std;
 
@@ -8,7 +13,11 @@ using namespace std;
 void sortLevel(vector<int> sorted[256], byte* image, int w, int h) {
 	// pixels sorting in linear time
 	for (int i = 0; i < w*h - 1; i++) {
+<<<<<<< HEAD
+		sorted[int(image[i])].push_back(i);// We stock the labels of the pixels
+=======
 		sorted[int(image[i])].push_back(i);
+>>>>>>> 25338465497b35ea6400f687cac3987b8dad85f7
 	}
 	return;
 }
@@ -46,17 +55,29 @@ Tree* buildComponentTree(byte* image, int w, int h, vector<Tree*> nodes, map<Tre
 		lowestNode[p] = p;
 	}
 	cout << nodes.size();
+<<<<<<< HEAD
+	vector<int> sorted[256] = {}; // Tab of vectors, tab[i] is the vector of the labels of pixels with level i
+=======
 	vector<int> sorted[256] = {};
+>>>>>>> 25338465497b35ea6400f687cac3987b8dad85f7
 	sortLevel(sorted, image, w, h);
 	for (int i = 0; i < 256; i++) {
 		if (sorted[i].size() > 0) {
 			// if the vector is not empty
 			for (int j = 0; j < sorted[i].size(); j++) {
 				Tree* p = nodes[sorted[i][j]]; // sorted[i][j] is the label of the jth pixel of intensity i
+<<<<<<< HEAD
+				p->isSeen(); // We indicate that the node has been processed
+				Tree* curTree = p->find2();
+				Tree* curNode = lowestNode[curTree]->find1();
+
+				// we search for the already processed neighbours with a higher intensity (second condition always true)
+=======
 				Tree* curTree = p->find2();
 				Tree* curNode = lowestNode[curTree]->find1();
 
 				// we search for the already processed neighbours with a higher intensity((second condition always true)
+>>>>>>> 25338465497b35ea6400f687cac3987b8dad85f7
 				vector<Tree*> neighbours = neighbourhood(nodes, p, sorted[i][j], w, h);
 				for (int k = 0; k < neighbours.size(); k++) {
 					Tree* q = neighbours[k];
