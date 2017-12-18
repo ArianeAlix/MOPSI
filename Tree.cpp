@@ -150,6 +150,12 @@ bool Tree::wasSeen() {
 	return seen;
 };
 
+<<<<<<< HEAD
+void Tree::isSeen() {
+	seen = true;
+}
+=======
+>>>>>>> 25338465497b35ea6400f687cac3987b8dad85f7
 
 void Tree::addAsLastSon(Tree* newSon) {
 	sons.push_back(newSon);
