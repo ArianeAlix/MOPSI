@@ -3,6 +3,7 @@
 #include <cerrno>
 #include <iostream>
 #include <string>
+#include <algorithm>
 using namespace std;
 
 // Node of a tree containing some data at each node
@@ -19,9 +20,12 @@ private:
 	// Info on its set
 	Tree* par1;
 	Tree* par2;
+	Tree* parent; //Not linked to the set but the one that has you in its list of sons
 	int rank1;
 	int rank2;
 
+	//For the N-lobes filter
+	int mark;
 public:
 	//BUILD
 	Tree();
@@ -44,7 +48,8 @@ public:
 	Tree* find2();// considering p as a tree
 
 	// Link two sets
-	Tree* link(Tree* y);
+	Tree* link1(Tree* y);
+	Tree* link2(Tree* y);
 
 	//Merge two nodes
 	Tree* merge(Tree* y);
@@ -56,12 +61,19 @@ public:
     int getLevel();
 	int getArea();
 	int getHighest();
+	int getMark();
+	Tree* getParent();
     // Set information of this node
     void setLevel(int lvl);
 	void setArea(int a);
 	void setHighest(int h);
+	void setMark(int m);
+	void setParent(Tree* padre);
     // Return the number of sons of this node
     int nbSons();
+
+	// Return the number of leaves in this tree
+	int nbLeaves();
 
     // Return the son at position pos, if any (considering left-most son is at position 0)
 	// Return an error if no son exists at the given position without exiting 
@@ -70,16 +82,15 @@ public:
 	// Check is the node was already processed
 	bool wasSeen();
 
-<<<<<<< HEAD
 	// Tell the node has been seen
 	void isSeen();
 
-=======
->>>>>>> 25338465497b35ea6400f687cac3987b8dad85f7
 
     // Add newSon as supplementary right-most son of this node
     void addAsLastSon(Tree* newSon);
 
 	// Displaying the tree with a depth-first search
 	void display(string prefix="", string indent="  ");
+
+
 };
