@@ -8,6 +8,7 @@ Tree::Tree() {
 	int highest;
 	vector<Tree*> sons = {};
 	bool seen = false;
+	Tree* parent;
 };
 
 
@@ -19,6 +20,7 @@ Tree::Tree(int lbl, int lvl) {
 	highest = lvl;
 	vector<Tree*> sons = {};
 	bool seen = false;
+	Tree* parent;
 };
 
 void Tree::delProf(Tree arb) {
@@ -49,7 +51,7 @@ void Tree::makeSet2() {
 
 Tree* Tree::find1() {
 	if (par1 != this) {
-		par1 = (*par1).find1();
+		par1 = par1->find1();
 	}
 	return par1;
 };
@@ -57,15 +59,27 @@ Tree* Tree::find1() {
 
 Tree* Tree::find2() {
 	if (par2 != this) {
-		par2 = (*par2).find1();
+		par2 = par2->find2();
 	}
 	return par2;
 };
 
 
-Tree* Tree::link(Tree* y) {
+Tree* Tree::link1(Tree* y) {
+	if (rank1 > y->rank1) {
+		y->par1 = this;
+		return this;
+	}
+	if (rank1 == y->rank1) {
+		y->rank1 += 1;
+	}
+	par1 = y;
+	return y;
+};
+
+Tree* Tree::link2(Tree* y) {
 	if (rank2 > y->rank2) {
-		y-> par2 = this;
+		y->par2 = this;
 		return this;
 	}
 	if (rank2 == y->rank2) {
@@ -77,7 +91,7 @@ Tree* Tree::link(Tree* y) {
 
 
 Tree* Tree::merge(Tree* y) {
-	Tree* temp = this->link(y);
+	Tree* temp = link2(y);
 	Tree* temp2;
 	if (temp->label == y->label) {
 		for (vector<Tree*>::iterator it = sons.begin(); it != sons.end(); ++it) {
@@ -87,14 +101,12 @@ Tree* Tree::merge(Tree* y) {
 	}
 	else{
 		for (vector<Tree*>::iterator it = y->sons.begin(); it != y->sons.end(); ++it) {
-			this->addAsLastSon(*it);
+			addAsLastSon(*it);
 		}
 		temp2 = y;
 	}
-	temp->area = temp->area + temp2->area;
-	if (temp->highest < temp2->highest) {
-		temp->highest = temp2->highest;
-	}
+	temp->area += temp2->area;
+	temp->highest =max(temp->highest, temp2->highest);
 	return temp;
 }
 
@@ -116,6 +128,15 @@ int Tree::getHighest() {
 	return highest;
 };
 
+int Tree::getMark() {
+	return mark;
+};
+
+Tree* Tree::getParent() {
+	return parent;
+};
+
+
 
 void Tree::setLevel(int lvl) {
 	level = lvl;
@@ -128,14 +149,34 @@ void Tree::setArea(int a) {
 
 
 void Tree::setHighest(int h) {
-	highest = h;;
+	highest = h;
 };
 
+void Tree::setMark(int m) {
+	mark=m;
+};
+
+void Tree::setParent(Tree* padre) {
+	parent=padre;
+};
 
 
 int Tree::nbSons() {
 	return sons.size();
 };
+
+int Tree::nbLeaves() {
+	if (nbSons() > 0) {
+		int sum=0;
+		for (vector<Tree*>::iterator it = sons.begin(); it != sons.end(); ++it) {
+			sum+= (*it)->nbLeaves();
+		}
+		return sum;
+	}
+	else
+		return 1;
+}
+
 
 Tree* Tree::getSon(int pos) {
 	try {
@@ -150,15 +191,13 @@ bool Tree::wasSeen() {
 	return seen;
 };
 
-<<<<<<< HEAD
 void Tree::isSeen() {
 	seen = true;
 }
-=======
->>>>>>> 25338465497b35ea6400f687cac3987b8dad85f7
 
 void Tree::addAsLastSon(Tree* newSon) {
 	sons.push_back(newSon);
+	newSon->setParent(this);
 };
 
 
