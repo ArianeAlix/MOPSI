@@ -5,6 +5,7 @@
  * Last Modified: 24/12/2017
  */
 
+#include <boost/lexical_cast.hpp>
 #include <iostream>
 #include <vector>
 
@@ -152,17 +153,100 @@ void removeSmallLeaves(Ctree* ComponentTree, int limitSize){
     }
 }
 
-int main() {
+int main(int argc, char*argv[]) {
 
+    //Checking of the command
+    if(argc!=4){
+        cout << "Syntax error" << endl;
+        cout << "write : MOPSI_filtre name_filter param_filter format" << endl;
+        return 0;
+    }
+
+    // Settings of the filter
+    string name_filter = argv[1];
+    int limitSize = boost::lexical_cast<int>(argv[2]);
+    string format = argv[3];
+
+
+    // Get the client image
+    byte* testImg;
+    int width,height;
+
+    if(format=="png"){
+        const char* testPath = srcPath("lenna.png");
+        loadGreyImage(testPath,testImg,width,height);
+    }
+    else if(format=="jpg"){
+        const char* testPath = srcPath("lenna.jpg");
+        loadGreyImage(testPath,testImg,width,height);
+    }
+    else{
+        cout << "Wrong format" << endl;
+        return 0;
+    }
+
+
+
+
+    cout << "Image size: " << width << "x" << height << endl;
+    cout << "Number of pixels: " << width*height << endl;
+
+    //Creating the Component Tree of an image
+    Tree* Qtree  = new Tree[width*height];
+    Tree* Qnodes = new Tree[width*height];
+    Ctree* nodes = new Ctree[width*height];
+    int* lowestNode = new int[width*height];
+    Ctree* ComponentTree = buildCTree(testImg, width, height, nodes, Qnodes, Qtree, lowestNode);
+
+
+
+    //Decoding the Ctree
+    ComponentTree->display();
+
+    // Filter processing
+    if(name_filter=="cartoon"){
+        removeSmallLeaves(ComponentTree, limitSize);
+    }
+    else{
+        cout << "Filter unknown" << endl;
+        return 0;
+    }
+
+    byte* resImg = readCtree(ComponentTree, nodes, Qnodes, width, height);
+    putGreyImage(IntPoint2(0,0), resImg, width,height);
+    ComponentTree->display();
+
+
+    //Save the new image
+    Image<byte> I(resImg,width,height);
+    if(format=="png"){
+        save(I,"image_output.png");
+    }
+    else save(I,"image_ouput.jpg");
+
+
+    //Deleting all the strctures created
+    delete [] resImg;
+    delete [] Qtree;
+    delete [] Qnodes;
+    delete [] lowestNode;
+
+
+
+
+    /*
     // Test de l'affichage d'image
 
-    //Loading Image
+    //Loading Image test
     byte* testImg;
     const char* testPath = srcPath("lenna.png");
     int width,height;
     loadGreyImage(testPath,testImg,width,height);
     cout << "Image size: " << width << "x" << height << endl;
     cout << "Number of pixels: " << width*height << endl;
+
+
+
 
     //Modifying and displaying it
     Window W2=openWindow(width,height);
@@ -243,5 +327,9 @@ int main() {
 
     click();
     delete(testImg);
+    */
+
+
+
     return 0;
 }
