@@ -1,3 +1,4 @@
+
 /************************************************************************
  * Construction de l'arbre de composantes et application de filtres
  * Authors: Ariane Alix, Jean Cauvin, Louis Dumont
