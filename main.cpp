@@ -1,306 +1,247 @@
+
+/************************************************************************
+ * Construction de l'arbre de composantes et application de filtres
+ * Authors: Ariane Alix, Jean Cauvin, Louis Dumont
+ * Last Modified: 24/12/2017
+ */
+
+#include <iostream>
+#include <vector>
+
+#include <Imagine/Graphics.h>
+#include <Imagine/Images.h>
+
 #include "Tree.h"
-#include<Imagine/Graphics.h>
-#include <map>
-#include <algorithm>
-#include <ctime>
+#include "Ctree.h"
 
-using namespace Imagine;
 using namespace std;
+using namespace Imagine;
 
 
+// Renvoit une image ou le nombre de couleurs a ete reduit a n
+void reduitSpectre(byte* img, int w, int h, int n){
+    int range= 256/n;
+    assert (range != 0);
+    for (int i=0; i<w*h; i++){
+        img[i] = byte((int(img[i])/range)*range);
+    }
+}
+
+// Renvoit les tableau qui en i contient les indices des pixels de niveau 255-i
 void sortLevel(vector<int> sorted[256], byte* image, int w, int h) {
-	// pixels sorting in linear time
-	for (int i = 0; i < w*h; i++) {
-		sorted[255 - int(image[i])].push_back(i);// We stock the labels of the pixels in a tab of vectors, with decreasing order oflevels
-	}
-	return;
+    // pixels sorting in linear time
+    for (int i = 0; i < w*h; i++) {
+        sorted[255 - int(image[i])].push_back(i);// We stock the labels of the pixels in a tab of vectors, with decreasing order oflevels
+    }
+    return;
+}
+
+// Renvoit les indices des voisins processés (en pq "émergés" de p)
+void neighbourhood(vector<int>& neighbours, Tree* nodes, Tree* p, int num, int w, int h) {
+    // Borders are specials
+    if (num%w != 0 && nodes[num - 1].wasSeen()) {
+        // Checking if not on the left border
+        neighbours.push_back(nodes[num - 1].getLabel());
+    }
+    if (num%w != w - 1 && nodes[num + 1].wasSeen()) {
+        // Checking if not on the right border
+        neighbours.push_back(nodes[num + 1].getLabel());
+    }
+    if (num > w && nodes[num - w].wasSeen()) {
+        // Checking if not on the upper border
+        neighbours.push_back(nodes[num - w].getLabel());
+    }
+    if (num < w*(h - 1) && nodes[num + w].wasSeen()) {
+        // Checking if not on the lower border
+        neighbours.push_back(nodes[num + w].getLabel());
+    }
 }
 
 
-vector<Tree*> neighbourhood(vector<Tree*> nodes, Tree* p, int num, int w, int h) {
-	vector < Tree* > neighbours = {};
-	// Borders are specials
-	if (num%w != 0 && nodes[num - 1]->wasSeen()) {
-		// Checking if not on the left border
-		neighbours.push_back(nodes[num - 1]);
-	}
-	if (num%w != w - 1 && nodes[num + 1]->wasSeen()) {
-		// Checking if not on the right border
-		neighbours.push_back(nodes[num + 1]);
-	}
-	if (num > w && nodes[num - w]->wasSeen()) {
-		// Checking if not on the upper border
-		neighbours.push_back(nodes[num - w]);
-	}
-	if (num < w*(h - 1) && nodes[num + w]->wasSeen()) {
-		// Checking if not on the lower border
-		neighbours.push_back(nodes[num + w]);
-	}
-	return neighbours;
+//En commentaire: les lignes correspondantes du pseudo-code
+Ctree* buildCTree(byte* img, int w, int h, Ctree* nodes, Tree* Qnodes, Tree* Qtree, int* lowestNode){
+
+    // Initialization
+    vector<int> sorted[256];   //1
+    sortLevel(sorted,img,w,h); //1
+    for (int i=0; i<w*h; i++){        //2
+        nodes[i] = Ctree(int(img[i]), 1);  //2
+        Qnodes[i]= Tree(i);            //2
+        Qnodes[i].makeSet();
+        //cout<<(Qnodes[i]).find()->getLabel()<<" ";
+        //cout<<(Qnodes[i]).find()->getLabel()<<" ";
+        Qtree[i] = Tree(i);            //2
+        Qtree[i].makeSet();
+        lowestNode[i]=i;              //2
+    }
+    //cout<<endl;
+    //for(int i=0; i<w*h; i++){
+    //    cout<<(Qnodes[i]).find()->getLabel()<<" ";
+    //}
+    //cout<<endl;
+    int testInt=0;
+    //Treatment
+    for (int l=0; l<256; l++){
+        for (vector<int>::iterator p=sorted[l].begin(); p!=sorted[l].end(); p++){
+            //testInt += 1;
+            Qtree[*p].isSeen();
+            Tree* curTree = Qtree[*p].find();                                       //4 pk ne pas prendre simplement Qtree[*p]?
+            Tree* curNode = Qnodes[lowestNode[(*curTree).getLabel()]].find();       //5 pk ne pas prendre simplement Qnodes[*p]?
+            vector<int> neighbours;
+            neighbourhood(neighbours, Qtree, curTree, *p, w, h); //calculating the processed neighbours
+            //cout<<neighbours.size();
+            for (vector<int>::iterator q=neighbours.begin(); q!=neighbours.end(); q++){ //6
+                testInt += 1;
+                //cout<<"PASSAGE"<<endl;
+                if (img[*q]>=img[*p]){                                                  //6  utile? (a priori non)
+                    testInt += 1;
+                    Tree* adjTree = Qtree[*q].find();                                   //7  ajdTree est alors le Tree de l'arbre partiel voisin
+                    Tree* adjNode = Qnodes[lowestNode[(*adjTree).getLabel()]].find();   //8  ajdNode pareil mais vu en tant que node
+                    if (curNode->getLabel() != adjNode->getLabel()){
+                        if (nodes[curNode->getLabel()].getLevel() == nodes[adjNode->getLabel()].getLevel() ){
+                            //merging the trees
+                            //curNode = MergeNodes(adjNode, curNode);
+                            Tree* tmpNode = adjNode->link(curNode);
+                            Tree* tmpNode2;
+                            if (tmpNode->getLabel() == curNode->getLabel()){
+                                nodes[curNode->getLabel()].adoptSons(&nodes[adjNode->getLabel()]);
+                                tmpNode2 = adjNode;
+                            }
+                            else{
+                                nodes[adjNode->getLabel()].adoptSons(&nodes[curNode->getLabel()]);
+                                tmpNode2 = curNode;
+                            }
+                            nodes[tmpNode->getLabel()].integrateData(&nodes[tmpNode2->getLabel()]);
+                            curNode = tmpNode;
+                        }
+                        else{
+                            //integrating the previously emerged island into the new one
+                            //cout<<"Son added"<<endl;
+                            nodes[curNode->getLabel()].addAsLastSon(&nodes[adjNode->getLabel()]);
+                            nodes[curNode->getLabel()].integrateData(&nodes[adjNode->getLabel()]);
+                        }
+                        curTree = Qtree[adjTree->getLabel()].link(&Qtree[curTree->getLabel()]);
+                        lowestNode[curTree->getLabel()] = curNode->getLabel();
+                    }
+                }
+            }
+        }
+    }
+    //cout<<testInt<<endl;
+    //for(int i=0; i<w*h; i++){
+    //    cout<<Qnodes[i].find()->getLabel()<<" ";
+    //}
+    Ctree* root = &nodes[lowestNode[Qtree[(Qnodes[510].find())->getLabel()].getLabel()]];
+    return root;
 }
 
-
-Tree* buildComponentTree(byte* image, int w, int h, vector<Tree*>& nodes, map<Tree*, Tree*>& M, map<Tree*, Tree*>& lowestNode) {
-	for (int i = 0; i < w*h; i++) {
-		Tree* p = new Tree(i, int(image[i])); // node build with label=i= n� of pixel and level=image[i]=grey level
-		p->setParent(p);
-		p->makeSet1();
-		p->makeSet2();
-		nodes.push_back(p);
-		lowestNode[p] = p;
-	}
-	vector<int> sorted[256] = {}; // Tab of vectors, tab[i] is the vector of the labels of pixels with level 255-i
-	sortLevel(sorted, image, w, h);
-
-	for (int i = 0; i < 256; i++) {
-		if (sorted[i].size() > 0) {
-			// if the vector is not empty
-			for (int j = 0; j < sorted[i].size(); j++) {
-				Tree* p = nodes[sorted[i][j]]; // sorted[i][j] is the label of the jth pixel of intensity 255-i
-				p->isSeen(); // We indicate that the node has been processed
-				Tree* curTree = p->find1();
-				Tree* curNode = lowestNode[curTree]->find2();
-
-				// we search for the already processed neighbours with a higher intensity (second condition always true)
-				vector<Tree*> neighbours = neighbourhood(nodes, p, sorted[i][j], w, h);
-				for (int k = 0; k < neighbours.size(); k++) {
-					Tree* q = neighbours[k];
-					Tree* adjTree = q->find1();
-					Tree* adjNode = lowestNode[adjTree]->find2();
-					if (curNode->getLabel() != adjNode->getLabel()) { // If the nodes are different
-						if (curNode->getLevel() == adjNode->getLevel()) {
-							curNode = adjNode->merge(curNode);
-						}
-						else {
-							curNode->addAsLastSon(adjNode);
-							curNode->setArea(curNode->getArea() + adjNode->getArea());
-							curNode->setHighest(max(curNode->getHighest(), adjNode->getHighest()));
-						}
-						curTree = adjTree->link1(curTree);
-						lowestNode[curTree] = curNode;
-					}
-				}
-			}
-		}
-	}
-
-	Tree* root = lowestNode[(nodes[0]->find2())->find1()];
-	for (int i = 0; i < w*h; i++) {
-		M[nodes[i]] = nodes[i]->find2();
-	}
-	return root;
+byte* readCtree(Ctree* ComponentTree, Ctree* nodes, Tree* Qnodes, int w, int h){
+    byte* res = new byte[w*h];
+    for (int i=0; i<w*h; i++){
+        res[i] = byte( nodes[(Qnodes[i].find())->getLabel()].getLevel());
+    }
+    return res;
 }
 
-
-
-
-// Keeping N Lobes algorithm and necessary functions
-int removeLobe(int lobe, vector<Tree*>& nodes) {
-	if (nodes[lobe]->getMark() == 1) {
-		nodes[lobe] = nodes[removeLobe(nodes[lobe]->getParent()->getLabel(), nodes)];
-	}
-	return lobe;
+void removeSmallLeaves(Ctree* ComponentTree, int limitSize){
+    for(vector<Ctree*>::iterator son= ComponentTree->m_sons.begin(); son!=ComponentTree->m_sons.end(); son++){
+        if ((*son)->getArea() < limitSize){
+            (*son)->setLevel(ComponentTree->getLevel());
+        }
+        removeSmallLeaves((*son), limitSize);
+    }
 }
-
-bool compByArea(Tree*t1, Tree* t2)
-{ return t1->getArea() < t2->getArea(); }
-
-
-void keepNLobes(Tree* root, vector<Tree*>& nodes, map<Tree*, Tree*>& M, int N) {
-	// We copy in a new vector the values of the tree (we do not want to copy the pointers, which
-	// would not enable free modifications)
-
-	vector<Tree *> T;
-
-	for (int j = 0; j < nodes.size(); j++) {
-		if (M[nodes[j]] == nodes[j]) { // We only copy the canonical element of the sets
-			Tree* t = new Tree;
-			t = nodes[j];
-			T.push_back(t);
-		}
-	}
-
-	// We sort the nodes by increasing area
-	sort(T.begin(), T.end(),compByArea);
-
-
-	for (int j = 0; j < nodes.size(); j++) {
-		nodes[j] -> setMark(0);
-	}
-
-	// We keep in Q the labels of the nodes of the lobes to remove
-	vector<int> Q = {};
-	int L = root->nbLeaves();
-
-	while (L > N) {
-
-		int c = (T.front())->getLabel();// We take the node with smallest area left
-		int p = nodes[c]->getParent()->getLabel();
-
-		if (nodes[p]->nbSons() > 1) {
-			L += -1;
-			nodes[c]->setMark(1);
-			Q.push_back(c);
-		}
-		T.erase(T.begin()); // We erase the node just processed
-	}
-
-	while (Q.size() > 0){
-		removeLobe(Q.front(), nodes);
-		Q.erase(Q.begin());
-	}
-
-	for (int j = 0; j < nodes.size(); j++) {
-		nodes[j]->setLevel(M[nodes[j]]->getLevel());
-	}
-
-}
-
-
-void maxima(Tree* root, vector<Tree*>& nodes, map<Tree*, Tree*>& M, int N) {
-	vector<Tree *> T;
-
-	for (int j = 0; j < nodes.size(); j++) {
-		if (M[nodes[j]] == nodes[j]) { // We only copy the canonical element of the sets
-			Tree* t = new Tree;
-			t = nodes[j];
-			T.push_back(t);
-		}
-	}
-
-	// We sort the nodes by increasing area
-	sort(T.begin(), T.end(), compByArea);
-
-	for (vector<Tree*>::iterator it = T.end()-1; it != T.end() - N-1; it--) {
-		// Lobes of maximal areas
-		(*it)->setLevel(255);
-	}
-
-	for (int j = 0; j < nodes.size(); j++) {
-		nodes[j]->setLevel(M[nodes[j]]->getLevel());
-	}
-}
-
-
-
 
 int main() {
-	/*
-	// Cr�ation d'un set et test
-	Tree* x = new Tree(0, 12);
-	Tree* y = new Tree(1, 14);
-	Tree* z = new Tree(2, 9);
-	Tree* w = new Tree(3, 7);
-	x->makeSet1();
-	y->makeSet1();
-	x->makeSet2();
-	y->makeSet2();
-	y->addAsLastSon(new Tree(4, 10));
-	z->makeSet1();
-	w->makeSet1();
-	z->makeSet2();
-	w->makeSet2();
 
-	x->link1(y);
-	z->link1(w);
+    // Test de l'affichage d'image
 
-	x->find2()->display("* "); // Affiche le parent de x, qui est y depuis l'op�ration link
-	y->find()->display("* "); // Doit afficher la meme chose (est son propre parent)
-	cout << endl;
+    //Loading Image
+    byte* testImg;
+    const char* testPath = srcPath("lenna.png");
+    int width,height;
+    loadGreyImage(testPath,testImg,width,height);
+    cout << "Image size: " << width << "x" << height << endl;
+    cout << "Number of pixels: " << width*height << endl;
 
-	z->find2()->display("* "); // Affiche w
-	cout << endl;
+    //Modifying and displaying it
+    Window W2=openWindow(width,height);
+    Window W1=openWindow(width,height);
+    setActiveWindow(W1);
+    //reduitSpectre(testImg,width,height, 5);
+    putGreyImage(IntPoint2(0,0), testImg, width,height);
 
-	Tree* v = y->merge(w);
-	v->display("* ");
-	cout << endl;
-	*/
+    //Random tests
+    Tree test(10);
+    cout<<test.find()->getLabel()<<endl;
 
-	// IMPORT d'IMAGE
-	// r�cup�rer le fichier
-	const char *image_file =
-		(argc > 1) ? argv[1] : srcPath("lenna1.png");
+    //Creating the Component Tree of an image
+    Tree* Qtree  = new Tree[width*height];
+    Tree* Qnodes = new Tree[width*height];
+    Ctree* nodes = new Ctree[width*height];
+    int* lowestNode = new int[width*height];
+    Ctree* ComponentTree = buildCTree(testImg, width, height, nodes, Qnodes, Qtree, lowestNode);
+    click();
+    //Decoding the Ctree (or trying to)
+    setActiveWindow(W2);
+    ComponentTree->display();
+    removeSmallLeaves(ComponentTree, 100);
+    byte* resImg = readCtree(ComponentTree, nodes, Qnodes, width, height);
+    putGreyImage(IntPoint2(0,0), resImg, width,height);
+    //ComponentTree->display();
+    delete [] resImg;
 
-	// Load image
-	byte* image;
-	int width, height;
-	cout << "Loading image: " << image_file << endl;
-	loadGreyImage(image_file, image, width, height);
+    //Other Random Tests
+    //cout << "Testing the Ctree construction" <<endl;
+    //for (int i=0; i<width; i=i+5){
+    //    cout << Qtree[i].getRank();
+    //}
+    //cout<<endl;
 
-	// Print statistics
-	cout << "Image size: " << width << "x" << height << endl;
-	cout << "Number of pixels: " << width*height << endl;
-
-	// Display image
-	Window window = openWindow(width, height);
-	putGreyImage(IntPoint2(0, 0), image, width, height);
-
-
-	/*TEST DU TRI DES PIXELS (temps lin�aire)
-
-	vector<int> sorted[256] = {};
-	sortLevel(sorted,image, width, height);
-	cout << sorted[100][0] << endl;
-	*/
+    //Deleting all the strctures created
+    delete [] Qtree;
+    delete [] Qnodes;
+    delete [] lowestNode;
 
 
-	//TEST du d�but de l'algo (it�ration et cr�ation de noeuds) -> ok
-	clock_t time1 = clock();
-	vector<Tree*> nodes;
-	map<Tree*, Tree*> M;
-	map<Tree*, Tree*> lowestNode;
-	Tree* root = buildComponentTree(image, width, height, nodes, M, lowestNode);
-	clock_t time2 = clock();
-	cout << "Tree generated in: "
-		<< ((float)(time2 - time1) / CLOCKS_PER_SEC) << " s" << endl;
+    //Testing the Tree structure
+    //Tree* a = new Tree;
+    //(*a).makeSet();
+    //Tree* b = new Tree;
+    //(*b).makeSet();
+    //Tree* c = new Tree;
+    //(*c).makeSet();
+    //string* str = new string("*");
+    //*b->link(a);
+    //*c->link(b);
+    //Tree* d = (*c).find();
+    //(*c).pdisplay(str);
+    //delete a;
+    //delete b;
+    //delete c;
+    //delete str;
 
-	click();
-
-	// Apply a filter to the tree
-	keepNLobes(root, nodes, M, 10);
-
-
-	// Reconstruct the picture with "nodes"
-	byte* image2;
-	loadGreyImage(image_file, image2, width, height);
-
-	for (int i = 0; i < width*height; i++) {
-		image2[i] = nodes[i]->getLevel();
-	}
-	// Display image2
-	Window window2 = openWindow(width, height);
-	setActiveWindow(window2);
-	putGreyImage(IntPoint2(0, 0), image2, width, height);
-
-
-	click();
-	// 2nd filter
-	vector<Tree*> nodes2;
-	map<Tree*, Tree*> M2;
-	map<Tree*, Tree*> lowestNode2;
-	Tree* root2 = buildComponentTree(image2, width, height, nodes2, M2, lowestNode2);
-
-	maxima(root2, nodes2, M2, 10);
+    //Testing the Ctree structure
+    Ctree* C1 = new Ctree(1,1);
+    Ctree* C2 = new Ctree(2,2);
+    Ctree* C3 = new Ctree(3,3);
+    Ctree* C4 = new Ctree(4,4);
+    Ctree* C6 = new Ctree(6,6);
+    (*C1).addAsLastSon(C2);
+    (*C1).addAsLastSon(C4);
+    (*C2).addAsLastSon(C3);
+    (*C3).setLevel(5);
+    (*C3).setArea(5);
+    (*C3).addAsLastSon(C6);
+    (*C1).adoptSons(C2);
+    removeSmallLeaves(C1, 3);
+    //(*C1).display();
+    //cout << (*C3).getLevel() << "  " << (*C3).getArea() << endl;
+    //cout << (*(*C2).getSon(0)).getLevel() << endl;
+    delete C1;
 
 
-	// Reconstruct the picture with "nodes"
-	byte* image3;
-	loadGreyImage(image_file, image3, width, height);
-
-	for (int i = 0; i < width*height; i++) {
-		image3[i] = nodes2[i]->getLevel();
-	}
-	// Display image3
-	Window window3 = openWindow(width, height);
-	setActiveWindow(window3);
-	putGreyImage(IntPoint2(0, 0), image3, width, height);
-
-
-
-
-	click();
-
-	delete image;
-	delete image2;
-	return 0;
+    click();
+    delete(testImg);
+    return 0;
 }

@@ -1,211 +1,85 @@
 #include "Tree.h"
+#include <iostream>
 
+using namespace std;
 
 Tree::Tree() {
-	int label;
-	int level;
-	area = 1;
-	int highest;
-	vector<Tree*> sons = {};
-	bool seen = false;
-	Tree* parent;
+    m_seen = false;
+    m_parent = this;
+    m_rank = 0;
 };
 
-
-
-Tree::Tree(int lbl, int lvl) {
-	label = lbl;
-	level = lvl;
-	area = 1;
-	highest = lvl;
-	vector<Tree*> sons = {};
-	bool seen = false;
-	Tree* parent;
-};
-
-void Tree::delProf(Tree arb) {
-	//Détruit l'arbre en remontant à partir de la racine "arb"
-	for (vector<Tree*>::iterator it = arb.sons.begin(); it != arb.sons.end(); ++it) {
-		delProf(**it);
-		delete *it;
-	}
-}
-
-Tree::~Tree() {
-	delProf(*this);
-};
-
-
-
-void Tree::makeSet1() {
-	par1 = this;
-	rank1 = 0;
-};
-
-
-void Tree::makeSet2() {
-	par2 = this;
-	rank2 = 0;
-};
-
-
-Tree* Tree::find1() {
-	if (par1 != this) {
-		par1 = par1->find1();
-	}
-	return par1;
-};
-
-
-Tree* Tree::find2() {
-	if (par2 != this) {
-		par2 = par2->find2();
-	}
-	return par2;
-};
-
-
-Tree* Tree::link1(Tree* y) {
-	if (rank1 > y->rank1) {
-		y->par1 = this;
-		return this;
-	}
-	if (rank1 == y->rank1) {
-		y->rank1 += 1;
-	}
-	par1 = y;
-	return y;
-};
-
-Tree* Tree::link2(Tree* y) {
-	if (rank2 > y->rank2) {
-		y->par2 = this;
-		return this;
-	}
-	if (rank2 == y->rank2) {
-		y->rank2 += 1;
-	}
-	par2 = y;
-	return y;
-};
-
-
-Tree* Tree::merge(Tree* y) {
-	Tree* temp = link2(y);
-	Tree* temp2;
-	if (temp->label == y->label) {
-		for (vector<Tree*>::iterator it = sons.begin(); it != sons.end(); ++it) {
-			y->addAsLastSon(*it);
-		}
-		temp2 = this;
-	}
-	else{
-		for (vector<Tree*>::iterator it = y->sons.begin(); it != y->sons.end(); ++it) {
-			addAsLastSon(*it);
-		}
-		temp2 = y;
-	}
-	temp->area += temp2->area;
-	temp->highest =max(temp->highest, temp2->highest);
-	return temp;
+Tree::Tree(int label){
+    m_seen = false;
+    m_parent = this;
+    m_rank = 0;
+    m_label = label;
 }
 
 
+Tree::~Tree(){};
 
-int Tree::getLabel() {
-	return label;
+void Tree::makeSet() {
+    m_parent = this;
+    m_rank = 0;
 };
 
-int Tree::getLevel() {
-	return level;
+Tree* Tree::find() {
+    if (m_parent != this) {
+        //cout<<"modif";
+        m_parent = m_parent->find();
+    }
+    return m_parent;
 };
 
-int Tree::getArea() {
-	return area;
+//Attention ne change pas les rangs des parents!
+//->Toujours l'appeler sur des elements canoniques
+Tree* Tree::link(Tree* y) {
+    if (m_rank > y->m_rank) {
+        y->m_parent = this;
+        return this;
+    }
+    if (m_rank == y->m_rank) {
+        y->m_rank += 1;
+    }
+    m_parent = y;
+    return y;
 };
 
-int Tree::getHighest() {
-	return highest;
-};
-
-int Tree::getMark() {
-	return mark;
-};
-
-Tree* Tree::getParent() {
-	return parent;
-};
-
-
-
-void Tree::setLevel(int lvl) {
-	level = lvl;
-};
-
-
-void Tree::setArea(int a) {
-	area=a;
-};
-
-
-void Tree::setHighest(int h) {
-	highest = h;
-};
-
-void Tree::setMark(int m) {
-	mark=m;
-};
-
-void Tree::setParent(Tree* padre) {
-	parent=padre;
-};
-
-
-int Tree::nbSons() {
-	return sons.size();
-};
-
-int Tree::nbLeaves() {
-	if (nbSons() > 0) {
-		int sum=0;
-		for (vector<Tree*>::iterator it = sons.begin(); it != sons.end(); ++it) {
-			sum+= (*it)->nbLeaves();
-		}
-		return sum;
-	}
-	else
-		return 1;
+// Attnetion the tree is only PARTIALLY displayed
+void Tree::pdisplay(string* prefixe){
+    if (m_parent != this){
+        m_parent->pdisplay(prefixe);
+    }
+    *prefixe = "  "+*prefixe;
+    cout<<*prefixe<<" "<<m_rank<<endl;
 }
 
 
-Tree* Tree::getSon(int pos) {
-	try {
-		return sons.at(pos);
-	}
-	catch (out_of_range &exn) {
-		cerr << "Out of range :" << exn.what() << endl;
-	}
-};
+// Access and Modification of Data
+int Tree::getLabel(){
+    return m_label;
+}
+
+int Tree::getRank(){
+    return m_rank;
+}
+void Tree::setRank(int rank){
+    m_rank = rank;
+}
+
+Tree* Tree::getParent(){
+    return m_parent;
+}
+void Tree::setParent(Tree* parent){
+    m_parent = parent;
+}
 
 bool Tree::wasSeen() {
-	return seen;
+    return m_seen;
 };
 
 void Tree::isSeen() {
-	seen = true;
+    m_seen = true;
 }
 
-void Tree::addAsLastSon(Tree* newSon) {
-	sons.push_back(newSon);
-	newSon->setParent(this);
-};
-
-
-
-void Tree::display(string prefix, string indent){
-	cout << prefix << "[" << label  << "] "  << level << endl;
-	prefix += indent;
-	for (vector<Tree*>::iterator it = sons.begin(); it != sons.end(); ++it) {
-		(*it)->display(prefix, indent);
-	}
-};
