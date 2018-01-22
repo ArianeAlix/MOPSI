@@ -13,10 +13,12 @@ Ctree::Ctree(){
     vector<Ctree*> m_sons;
 }
 
-Ctree::Ctree(int lvl, int area){
+Ctree::Ctree(int lvl, int area, int label){
     m_level = lvl;
     m_area  = area;
     m_highest = lvl;
+    m_volume = area;
+    m_label = label;
 }
 
 Ctree::~Ctree(){
@@ -38,6 +40,14 @@ int Ctree::getArea(){
 
 int Ctree::getHighest(){
     return m_highest;
+}
+
+int Ctree::getVolume(){
+    return m_volume;
+}
+
+int Ctree::getLabel(){
+    return m_label;
 }
 
 Ctree* Ctree::getSon(int pos){
@@ -66,14 +76,24 @@ void Ctree::setHighest(int highest){
     m_highest = highest;
 }
 
+void Ctree::setVolume(int volume){
+    m_volume = volume;
+}
+
+void Ctree::setLabel(int label){
+    m_label = label;
+}
+
 void Ctree::addAsLastSon(Ctree *newSon){
     m_sons.push_back(newSon);
+    m_volume += newSon->getVolume();
 }
 
 void Ctree::adoptSons(Ctree* prevFather){
     //the sons of prevFather are added to the Ctree
     for (int i=0; i<prevFather->nbSons(); i++){
         m_sons.push_back(prevFather->getSons()[i]);
+        m_volume += prevFather->getSons()[i]->getVolume();
     }
     //and prevFather forgets them, to avoid double deletion
     prevFather->m_sons={};
@@ -82,12 +102,13 @@ void Ctree::adoptSons(Ctree* prevFather){
 void Ctree::integrateData(Ctree *mergedNode){
     //cout<<"integrate used"<<endl;
     m_area += mergedNode->getArea();
+    m_volume += mergedNode->getArea();
     m_highest = max(m_highest,mergedNode->getHighest());
 }
 
 // Other Methods
 void Ctree::display(string prefix, string indent){
-    cout << prefix << "[" << m_level  << "] " << m_area << endl;
+    cout << prefix << "[" << m_level  << "] " << m_area << ", " << m_volume << endl;
     prefix += indent;
     for (vector<Ctree*>::iterator it = m_sons.begin(); it != m_sons.end(); ++it) {
         (*it)->display(prefix, indent);

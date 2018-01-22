@@ -1,7 +1,7 @@
 /************************************************************************
  * Construction de l'arbre de composantes et application de filtres
  * Authors: Ariane Alix, Jean Cauvin, Louis Dumont
- * Last Modified: 24/12/2017
+ * Last Modified: 22/01/2018
  */
 
 #include <iostream>
@@ -17,16 +17,17 @@ using namespace std;
 using namespace Imagine;
 
 
-// Renvoit une image ou le nombre de couleurs a ete reduit a n
+// Renvoie une image ou le nombre de couleurs a ete reduit a n
 void reduitSpectre(byte* img, int w, int h, int n){
     int range= 256/n;
     assert (range != 0);
     for (int i=0; i<w*h; i++){
         img[i] = byte((int(img[i])/range)*range);
     }
+    cout<<"Reduction du spectre terminee"<<endl;
 }
 
-// Renvoit les tableau qui en i contient les indices des pixels de niveau 255-i
+// Renvoie les tableau qui en i contient les indices des pixels de niveau 255-i
 void sortLevel(vector<int> sorted[256], byte* image, int w, int h) {
     // pixels sorting in linear time
     for (int i = 0; i < w*h; i++) {
@@ -35,7 +36,7 @@ void sortLevel(vector<int> sorted[256], byte* image, int w, int h) {
     return;
 }
 
-// Renvoit les indices des voisins processés (en pq "émergés" de p)
+// Renvoie les indices des voisins déjà processés (en pq "émergés" de p)
 void neighbourhood(vector<int>& neighbours, Tree* nodes, Tree* p, int num, int w, int h) {
     // Borders are specials
     if (num%w != 0 && nodes[num - 1].wasSeen()) {
@@ -56,7 +57,7 @@ void neighbourhood(vector<int>& neighbours, Tree* nodes, Tree* p, int num, int w
     }
 }
 
-
+//Construit l'arbre des composantes à partir de l'image et de tableaux créés à l'avance
 //En commentaire: les lignes correspondantes du pseudo-code
 Ctree* buildCTree(byte* img, int w, int h, Ctree* nodes, Tree* Qnodes, Tree* Qtree, int* lowestNode){
 
@@ -64,20 +65,14 @@ Ctree* buildCTree(byte* img, int w, int h, Ctree* nodes, Tree* Qnodes, Tree* Qtr
     vector<int> sorted[256];   //1
     sortLevel(sorted,img,w,h); //1
     for (int i=0; i<w*h; i++){        //2
-        nodes[i] = Ctree(int(img[i]), 1);  //2
+        nodes[i] = Ctree(int(img[i]), 1, i);  //2
         Qnodes[i]= Tree(i);            //2
         Qnodes[i].makeSet();
-        //cout<<(Qnodes[i]).find()->getLabel()<<" ";
-        //cout<<(Qnodes[i]).find()->getLabel()<<" ";
         Qtree[i] = Tree(i);            //2
         Qtree[i].makeSet();
         lowestNode[i]=i;              //2
     }
-    //cout<<endl;
-    //for(int i=0; i<w*h; i++){
-    //    cout<<(Qnodes[i]).find()->getLabel()<<" ";
-    //}
-    //cout<<endl;
+
     int testInt=0;
     //Treatment
     for (int l=0; l<256; l++){
@@ -115,7 +110,6 @@ Ctree* buildCTree(byte* img, int w, int h, Ctree* nodes, Tree* Qnodes, Tree* Qtr
                         }
                         else{
                             //integrating the previously emerged island into the new one
-                            //cout<<"Son added"<<endl;
                             nodes[curNode->getLabel()].addAsLastSon(&nodes[adjNode->getLabel()]);
                             nodes[curNode->getLabel()].integrateData(&nodes[adjNode->getLabel()]);
                         }
@@ -126,14 +120,19 @@ Ctree* buildCTree(byte* img, int w, int h, Ctree* nodes, Tree* Qnodes, Tree* Qtr
             }
         }
     }
-    //cout<<testInt<<endl;
-    //for(int i=0; i<w*h; i++){
-    //    cout<<Qnodes[i].find()->getLabel()<<" ";
-    //}
-    Ctree* root = &nodes[lowestNode[Qtree[(Qnodes[510].find())->getLabel()].getLabel()]];
+    Ctree* root = &nodes[lowestNode[Qtree[(Qnodes[0].find())->getLabel()].getLabel()]];
+    //Correction sauvage pour faire marcher les filtres:
+    for (int i=0; i<w*h; i++){
+        if (nodes[i].getArea()==w*h){
+            root = &nodes[i];
+            cout<<"True root found"<<endl;
+        }
+    }
     return root;
 }
 
+
+//Décode un arbre de composantes et recrée l'image correspondante
 byte* readCtree(Ctree* ComponentTree, Ctree* nodes, Tree* Qnodes, int w, int h){
     byte* res = new byte[w*h];
     for (int i=0; i<w*h; i++){
@@ -142,12 +141,82 @@ byte* readCtree(Ctree* ComponentTree, Ctree* nodes, Tree* Qnodes, int w, int h){
     return res;
 }
 
-void removeSmallLeaves(Ctree* ComponentTree, int limitSize){
+
+void removeNode(Ctree* fatherNode, Ctree* nodeToRm, Tree* Qnodes, int w, int h){
+    //All pixels that pointed to the removed nodes' canonical element now point to it's father
+    for (int i=0; i<w*h; i++){
+        if (Qnodes[i].getParent()->getLabel()==nodeToRm->getLabel()) {
+            Qnodes[i].setParent(&Qnodes[fatherNode->getLabel()]);
+        }
+    }
+    //We remove the node in itself from the Ctree
+    int label=nodeToRm->getLabel();
+    Ctree* cible;
+    for (vector<Ctree*>::iterator i=fatherNode->getSons().begin(); i!=fatherNode->getSons().end(); i++){
+        if ((*i)->getLabel() == label){
+            cible = &(**i);
+            break;
+        }
+    }
+    fatherNode->adoptSons(cible);
+    //vector<Ctree*>::iterator it=fatherNode->getSons().find(cible);
+    //fatherNode->getSons().erase(it);
+}
+
+//Premier filtre: on "supprime" tous les noeuds dont l'aire est plus petite qu'un seuil
+void removeSmallLeaves_area(Ctree* ComponentTree, int limitSize){
     for(vector<Ctree*>::iterator son= ComponentTree->m_sons.begin(); son!=ComponentTree->m_sons.end(); son++){
         if ((*son)->getArea() < limitSize){
             (*son)->setLevel(ComponentTree->getLevel());
         }
-        removeSmallLeaves((*son), limitSize);
+        removeSmallLeaves_area((*son), limitSize);
+    }
+}
+
+//Premier filtre: on "supprime" tous les noeuds dont l'aire est plus petite qu'un seuil (supprime réellement les noeuds
+void removeSmallLeaves_areaM(Ctree* ComponentTree, int limitSize, Tree* Qnodes, int w, int h, bool stop=false){
+    int sons2see=ComponentTree->nbSons();
+    while (sons2see>0) {
+        Ctree* son = ComponentTree->getSon(sons2see-1);
+        removeSmallLeaves_areaM(son, limitSize, Qnodes, w, h);
+        if (son->getArea() < limitSize) {
+            removeNode(ComponentTree, son, Qnodes, w, h);
+        }
+        sons2see -= 1;
+    }
+}
+
+//On "supprime" tous les noeuds dont le volume est plus petit qu'un seuil
+void removeSmallLeaves_volume(Ctree* ComponentTree, int limitSize){
+    for(vector<Ctree*>::iterator son= ComponentTree->m_sons.begin(); son!=ComponentTree->m_sons.end(); son++){
+        if ((*son)->getVolume() < limitSize){
+            (*son)->setLevel(ComponentTree->getLevel());
+        }
+        removeSmallLeaves_volume((*son), limitSize);
+    }
+}
+
+//Same idea as remove small leaves but deals with the darkest zones (dégradé etc)
+//Used alone, the result isn't really pretty
+void removeSmallZones(Ctree* ComponentTree, int limitSize){
+    int area = ComponentTree->getArea();
+    for(vector<Ctree *>::iterator son= ComponentTree->m_sons.begin(); son!=ComponentTree->m_sons.end(); son++){
+        area -= (*son)->getArea();
+        removeSmallZones((*son), limitSize);
+    }
+    if (area<limitSize && ComponentTree->nbSons()>0){
+        ComponentTree->setLevel(ComponentTree->getSons()[0]->getLevel());
+    }
+}
+
+//All the nodes above the level will be set as black
+void blackLevel(Ctree* ComponentTree, int newLevel){
+    int level = ComponentTree->getLevel();
+    for(vector<Ctree *>::iterator son= ComponentTree->m_sons.begin(); son!=ComponentTree->m_sons.end(); son++){
+        blackLevel((*son),newLevel);
+    }
+    if(level<newLevel){
+        ComponentTree->setLevel(0);
     }
 }
 
@@ -167,80 +236,38 @@ int main() {
     Window W2=openWindow(width,height);
     Window W1=openWindow(width,height);
     setActiveWindow(W1);
-    //reduitSpectre(testImg,width,height, 5);
+    reduitSpectre(testImg,width,height, 50);
     putGreyImage(IntPoint2(0,0), testImg, width,height);
 
-    //Random tests
-    Tree test(10);
-    cout<<test.find()->getLabel()<<endl;
-
     //Creating the Component Tree of an image
-    Tree* Qtree  = new Tree[width*height];
+    Tree* Qtree = new Tree[width*height];
     Tree* Qnodes = new Tree[width*height];
     Ctree* nodes = new Ctree[width*height];
     int* lowestNode = new int[width*height];
     Ctree* ComponentTree = buildCTree(testImg, width, height, nodes, Qnodes, Qtree, lowestNode);
-    click();
-    //Decoding the Ctree (or trying to)
+    //click();
+
+    //Decoding the Ctree and testing the filters
     setActiveWindow(W2);
-    ComponentTree->display();
-    removeSmallLeaves(ComponentTree, 100);
+    removeSmallLeaves_area(ComponentTree, 10000);
+    //blackLevel(ComponentTree, 100);
     byte* resImg = readCtree(ComponentTree, nodes, Qnodes, width, height);
     putGreyImage(IntPoint2(0,0), resImg, width,height);
-    //ComponentTree->display();
+    //click();
+
+
+    cout<<"Tests termines"<<endl;
+    click();
     delete [] resImg;
 
-    //Other Random Tests
-    //cout << "Testing the Ctree construction" <<endl;
-    //for (int i=0; i<width; i=i+5){
-    //    cout << Qtree[i].getRank();
-    //}
-    //cout<<endl;
 
     //Deleting all the strctures created
     delete [] Qtree;
     delete [] Qnodes;
+    delete [] nodes;
     delete [] lowestNode;
 
-
-    //Testing the Tree structure
-    //Tree* a = new Tree;
-    //(*a).makeSet();
-    //Tree* b = new Tree;
-    //(*b).makeSet();
-    //Tree* c = new Tree;
-    //(*c).makeSet();
-    //string* str = new string("*");
-    //*b->link(a);
-    //*c->link(b);
-    //Tree* d = (*c).find();
-    //(*c).pdisplay(str);
-    //delete a;
-    //delete b;
-    //delete c;
-    //delete str;
-
-    //Testing the Ctree structure
-    Ctree* C1 = new Ctree(1,1);
-    Ctree* C2 = new Ctree(2,2);
-    Ctree* C3 = new Ctree(3,3);
-    Ctree* C4 = new Ctree(4,4);
-    Ctree* C6 = new Ctree(6,6);
-    (*C1).addAsLastSon(C2);
-    (*C1).addAsLastSon(C4);
-    (*C2).addAsLastSon(C3);
-    (*C3).setLevel(5);
-    (*C3).setArea(5);
-    (*C3).addAsLastSon(C6);
-    (*C1).adoptSons(C2);
-    removeSmallLeaves(C1, 3);
-    //(*C1).display();
-    //cout << (*C3).getLevel() << "  " << (*C3).getArea() << endl;
-    //cout << (*(*C2).getSon(0)).getLevel() << endl;
-    delete C1;
-
-
-    click();
+    //click();
     delete(testImg);
     return 0;
 }
