@@ -274,7 +274,7 @@ int main(int argc, char*argv[]) {
 
     // Filter processing
     if(name_filter=="cartoon"){
-        removeSmallLeaves(ComponentTree, limitSize);
+        removeSmallLeaves_area(ComponentTree, limitSize);
     }
     else{
         cout << "Filter unknown" << endl;
@@ -299,8 +299,6 @@ int main(int argc, char*argv[]) {
     delete [] Qtree;
     delete [] Qnodes;
     delete [] lowestNode;
-
-
 
 
     /*
@@ -353,6 +351,9 @@ int main(int argc, char*argv[]) {
     delete [] lowestNode;
 
     //click();
+    delete(testImg);
+
+    click();
     delete(testImg);
     */
 
