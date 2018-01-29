@@ -227,34 +227,23 @@ int main(int argc, char*argv[]) {
     //Checking of the command
     if(argc!=4){
         cout << "Syntax error" << endl;
-        cout << "write : MOPSI_filtre name_filter param_filter format" << endl;
+        cout << "write : MOPSI_filtre name_img name_filter param_filter" << endl;
         return 0;
     }
 
     // Settings of the filter
-    string name_filter = argv[1];
-    int limitSize = boost::lexical_cast<int>(argv[2]);
-    string format = argv[3];
+    string name_img = argv[1];
+    string name_filter = argv[2];
+    int limitSize = boost::lexical_cast<int>(argv[3]);
+
 
 
     // Get the client image
     byte* testImg;
     int width,height;
 
-    if(format=="png"){
-        const char* testPath = srcPath("lenna.png");
-        loadGreyImage(testPath,testImg,width,height);
-    }
-    else if(format=="jpg"){
-        const char* testPath = srcPath("lenna.jpg");
-        loadGreyImage(testPath,testImg,width,height);
-    }
-    else{
-        cout << "Wrong format" << endl;
-        return 0;
-    }
 
-
+    loadGreyImage(name_img,testImg,width,height);
 
 
     cout << "Image size: " << width << "x" << height << endl;
@@ -269,29 +258,30 @@ int main(int argc, char*argv[]) {
 
 
 
-    //Decoding the Ctree
-    ComponentTree->display();
-
     // Filter processing
-    if(name_filter=="cartoon"){
+    if(name_filter=="area"){
         removeSmallLeaves_area(ComponentTree, limitSize);
+        cout << "area processing" << endl;
     }
-    else{
-        cout << "Filter unknown" << endl;
-        return 0;
+    if(name_filter=="volume"){
+        removeSmallLeaves_volume(ComponentTree, limitSize);
+        cout << "volume processing" << endl;
+    }
+    if(name_filter=="zone"){
+        removeSmallZones(ComponentTree,limitSize);
+        cout << "zone processing" << endl;
     }
 
     byte* resImg = readCtree(ComponentTree, nodes, Qnodes, width, height);
     putGreyImage(IntPoint2(0,0), resImg, width,height);
-    ComponentTree->display();
 
 
     //Save the new image
     Image<byte> I(resImg,width,height);
-    if(format=="png"){
-        save(I,"image_output.png");
-    }
-    else save(I,"image_ouput.jpg");
+
+    save(I,"image_output.png");
+
+
 
 
     //Deleting all the strctures created
@@ -299,7 +289,6 @@ int main(int argc, char*argv[]) {
     delete [] Qtree;
     delete [] Qnodes;
     delete [] lowestNode;
-
 
     /*
     // Test de l'affichage d'image
