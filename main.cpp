@@ -347,6 +347,11 @@ int main(int argc, char*argv[]) {
         removeSmallZones(ComponentTree,limitSize);
         cout << "zone processing" << endl;
     }
+    if(name_filter=="equi"){
+        equiFilter(ComponentTree,limitSize);
+        cout << "equifilter processing" << endl;
+    }
+    
 
     byte* resImg = readCtree(ComponentTree, nodes, Qnodes, width, height);
     putGreyImage(IntPoint2(0,0), resImg, width,height);
