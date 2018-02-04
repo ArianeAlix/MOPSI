@@ -4,8 +4,6 @@
  * Authors: Ariane Alix, Jean Cauvin, Louis Dumont
  * Last Modified: 22/01/2018
  */
-
-#include <boost/lexical_cast.hpp>
 #include <iostream>
 #include <vector>
 
@@ -310,7 +308,7 @@ int main(int argc, char*argv[]) {
     // Settings of the filter
     string name_img = argv[1];
     string name_filter = argv[2];
-    int limitSize = boost::lexical_cast<int>(argv[3]);
+    int limitSize = stoi(argv[3]);
 
 
 
