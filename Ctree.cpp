@@ -86,14 +86,13 @@ void Ctree::setLabel(int label){
 
 void Ctree::addAsLastSon(Ctree *newSon){
     m_sons.push_back(newSon);
-    m_volume += newSon->getVolume();
+    m_volume = m_volume + newSon->getVolume() + newSon->getArea()*(newSon->getLevel()-m_level-1);
 }
 
 void Ctree::adoptSons(Ctree* prevFather){
     //the sons of prevFather are added to the Ctree
     for (int i=0; i<prevFather->nbSons(); i++){
-        m_sons.push_back(prevFather->getSons()[i]);
-        m_volume += prevFather->getSons()[i]->getVolume();
+        addAsLastSon(prevFather->getSons()[i]);
     }
     //and prevFather forgets them, to avoid double deletion
     prevFather->m_sons={};
@@ -108,7 +107,7 @@ void Ctree::integrateData(Ctree *mergedNode){
 
 // Other Methods
 void Ctree::display(string prefix, string indent){
-    cout << prefix << "[" << m_level  << "] " << m_area << ", " << m_volume << endl;
+    cout << prefix << "[" << m_level  << " , " <<  m_label  << "] " << m_area << ", " << m_volume << endl;
     prefix += indent;
     for (vector<Ctree*>::iterator it = m_sons.begin(); it != m_sons.end(); ++it) {
         (*it)->display(prefix, indent);

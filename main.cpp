@@ -29,6 +29,22 @@ void reduitSpectre(byte* img, int w, int h, int n){
     cout<<"Reduction du spectre terminee"<<endl;
 }
 
+// Renvoit le niveau moyen d'une image
+int niveauMoyen(byte* img, int w, int h){
+    int somme = 0;
+    for (int i=0; i<w*h; i++){
+        somme += int(img[i]);
+    }
+    return (somme/(w*h));
+}
+
+// Réhausse le niveau d'une image de "hausse"
+void rehausse(byte* img, int hausse, int w, int h){
+    for (int i=0; i<w*h; i++){
+        img[i] = byte(int(img[i])+hausse);
+    }
+}
+
 // Renvoie les tableau qui en i contient les indices des pixels de niveau 255-i
 void sortLevel(vector<int> sorted[256], byte* image, int w, int h) {
     // pixels sorting in linear time
@@ -154,15 +170,21 @@ void removeNode(Ctree* fatherNode, Ctree* nodeToRm, Tree* Qnodes, int w, int h){
     //We remove the node in itself from the Ctree
     int label=nodeToRm->getLabel();
     Ctree* cible;
-    for (vector<Ctree*>::iterator i=fatherNode->getSons().begin(); i!=fatherNode->getSons().end(); i++){
+    for (vector<Ctree*>::iterator i=fatherNode->m_sons.begin(); i!=fatherNode->m_sons.end(); i++){
         if ((*i)->getLabel() == label){
             cible = &(**i);
             break;
         }
     }
     fatherNode->adoptSons(cible);
-    //vector<Ctree*>::iterator it=fatherNode->getSons().find(cible);
-    //fatherNode->getSons().erase(it);
+}
+
+//Fonction pour propager un niveau le long d'une branche (et ainsi faire disparaitre l'homogénéiser
+void propageBranche(Ctree* origine, int lvl){
+    origine->setLevel(lvl);
+    for(vector<Ctree*>::iterator i=origine->m_sons.begin(); i!=origine->m_sons.end(); i++){
+        propageBranche((*i), lvl);
+    }
 }
 
 //Premier filtre: on "supprime" tous les noeuds dont l'aire est plus petite qu'un seuil
@@ -219,6 +241,60 @@ void blackLevel(Ctree* ComponentTree, int newLevel){
     }
     if(level<newLevel){
         ComponentTree->setLevel(0);
+    }
+}
+
+//RESULTAT PAS SUPER BEAU
+//Réduit les composantes les plus déséquilibrées
+//On veut éliminer les dégradés etc:
+//Si un noeud n'a qu'un seul fils, et que celui-ci n'a qu'un seul fils (branche trop longue) alors on supprime le dernier fils
+void collapseFilterM(Ctree* ComponentTree, Tree* Qnodes, int w, int h){
+    int n = ComponentTree->nbSons(); //Les cas diffèrent selon le nombre de fils
+    //Si le noeud n'a pas de fils on ne fait rien
+    if (n==1){  //Si le noeud n'a qu'un fils, on vérifie que la branche n'est pas trop longue
+        Ctree* son = ComponentTree->getSon(0);
+        if (son->nbSons()==1){ //Si l'on détecte une branche trop longue
+            removeNode(son, son->getSon(0), Qnodes, w, h);
+            collapseFilterM(ComponentTree, Qnodes, w, h);
+        }
+        collapseFilterM(son, Qnodes, w, h);
+    }
+    if (n>1){ //Si le noeud a plusieurs fils, on ne modifie rien et on traite les fils
+        for(vector<Ctree *>::iterator son= ComponentTree->m_sons.begin(); son!=ComponentTree->m_sons.end(); son++){
+            collapseFilterM((*son), Qnodes, w,h);
+        }
+    }
+}
+void collapseFilter(Ctree* ComponentTree){
+    int n = ComponentTree->nbSons(); //Les cas diffèrentes selon le nombre de fils
+    //Si le noeud n'a pas de fils on ne fait rien
+    if (n==1){  //Si le noeud n'a qu'un fils, on vérifie que la branche n'est pas trop longue
+        Ctree* son = ComponentTree->getSon(0);
+        if (son->nbSons()==1){ //Si l'on détecte une branche trop longue
+            cout<<"a"<<endl;
+            son->getSon(0)->setLevel(son->getLevel());
+        }
+        collapseFilter(son);
+    }
+    if (n>1){ //Si le noeud a plusieurs fils, on ne modifie rien et on traite les fils
+        for(vector<Ctree *>::iterator son= ComponentTree->m_sons.begin(); son!=ComponentTree->m_sons.end(); son++){
+            collapseFilter((*son));
+        }
+    }
+}
+
+//Filtre faisant désaparaître les partie déséquilibrées (en terme de volume) d'un arbre
+//Si un noeud a des fils peu volumineux (en comparaison des autres) alors il les supprime
+void equiFilter(Ctree* ComponentTree, float seuil) {
+    int totVoS = 0; //Volume total des fils
+    for (vector<Ctree *>::iterator son = ComponentTree->m_sons.begin(); son != ComponentTree->m_sons.end(); son++) {
+        equiFilter((*son), seuil);
+        totVoS += (*son)->getVolume();
+    }
+    for (vector<Ctree *>::iterator son = ComponentTree->m_sons.begin(); son != ComponentTree->m_sons.end(); son++) {
+        if ( (float((*son)->getVolume()) / float(totVoS))   <   seuil){
+            propageBranche((*son), ComponentTree->getLevel());
+        }
     }
 }
 
